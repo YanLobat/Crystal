@@ -56,7 +56,6 @@ router
   	await ctx.render('login', {
   	});
   })
- router
  .post('/login', passport.authenticate('local', {
     successRedirect: '/secretBankAccount',
     failureRedirect: '/damn'
