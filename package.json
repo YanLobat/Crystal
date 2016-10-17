@@ -1,0 +1,44 @@
+{
+  "name": "crystal",
+  "version": "1.0.0",
+  "description": "tesk task for crystal service",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YanLobat/Crystal.git"
+  },
+  "keywords": [
+    "koa2",
+    "porstgresql"
+  ],
+  "author": "YanLobat",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/YanLobat/Crystal/issues"
+  },
+  "homepage": "https://github.com/YanLobat/Crystal#readme",
+  "dependencies": {
+    "babel-core": "^6.17.0",
+    "babel-plugin-transform-async-to-generator": "^6.16.0",
+    "babel-polyfill": "^6.16.0",
+    "babel-preset-es2015": "^6.16.0",
+    "babel-preset-stage-0": "^6.16.0",
+    "babel-register": "^6.16.3",
+    "co": "^4.6.0",
+    "jade": "^1.11.0",
+    "koa": "^2.0.0-alpha.7",
+    "koa-bodyparser": "^3.2.0",
+    "koa-convert": "^1.2.0",
+    "koa-generic-session": "^1.11.3",
+    "koa-helmet": "^2.0.0",
+    "koa-passport": "^1.3.0",
+    "koa-router": "^7.0.1",
+    "koa-session": "^3.4.0",
+    "koa-static": "^2.0.0",
+    "koa-views": "^5.1.2",
+    "sequelize": "^3.24.3"
+  }
+}
