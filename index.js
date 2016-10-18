@@ -1,5 +1,6 @@
 const Koa = require('koa');
 const Router = require('koa-router');
+const route = require('koa-route');
 const path = require('path');
 const bodyParser = require('koa-bodyparser');
 const convert = require('koa-convert');
@@ -7,64 +8,143 @@ const views = require('koa-views');
 const helmet = require('koa-helmet');
 const session = require('koa-generic-session');
 const passport = require('koa-passport');
-const co = require('co');
+const Sequelize = require('sequelize');
+const randomstring = require('randomstring');
 
 const app = new Koa();
 const router = new Router();
 
+app.proxy = true;
+
+
+passport.serializeUser(function(user, done) {
+  done(null, user.id)
+});
+
+passport.deserializeUser(function(id, done) {
+  User.findOne({id :id}).then((user) => {
+    done(null, user)
+  });
+});
 
 const LocalStrategy = require('passport-local').Strategy;
-passport.use(new LocalStrategy('local', (username, password, done) => {
-	console.log('here');
-	return co(function*(){
-	    try {
-	      if (username === 'test' && password === 'test') {
-		    done(null, user)
-		  } else {
-		    done(null, false)
-		  }
-	    } catch (err) {
-	      throw err;
-	    }
-  	});
-}));
+passport.use(new LocalStrategy(function(username, password, done) {
+  User.findOne({username: username}).then((user) => {
+    if (user === null) {
+      done(null, false, {message: 'invalid credentials'});
+    }
 
+    const hashed = 'huyzalupasir'+password;
+    if (hashed === user.password_hash) {
+      done(null, user);
+    }
+    else {
+      done(null, false, {message: 'invalid credentials'});
+    }
+  });
+}))
 
+app.keys = ['secret', 'key'];
 app
   .use(convert(views(path.join(__dirname,'/views'), { extension: 'jade' })))
-  .use(convert(router.routes()))
-  .use(convert(router.allowedMethods()))
-  .use(convert(bodyParser))
+  .use(bodyParser())
   .use(convert(require('koa-static')(__dirname + '/public')))
   .use(convert(helmet()))
   .use(convert(session(app)))
-  .use(convert(passport.initialize()))
-  .use(convert(passport.session()))
-  .use(async (ctx, next) => {
-  	const start = new Date();
-  	await next();
-  	const ms = new Date() - start;
-  	console.log(`${ctx.method} ${ctx.url} - ${ms}ms`);
-  });
+  .use(passport.initialize())
+  .use(passport.session());
 
-router
-  .get('/', async function (ctx, next) {
-  	ctx.state = {
-    	title: 'koa2 title'
-  	};
 
-  	await ctx.render('login', {
-  	});
+app.use(route.get('/', async (ctx) => {
+  ctx.state = {
+    title: 'koa2 title'
+  };
+
+  await ctx.render('login', {});
+}));
+
+app.use(route.get('/success', async (ctx) => {
+  if (ctx.isAuthenticated()) {
+    ctx.state = {
+      title: 'koa2 success',
+      success: true
+    };  
+  }
+  else {
+    ctx.state = {
+      title: 'koa2 failure',
+      success: false
+    };
+  }
+  await ctx.render('success', {});
+}));
+
+app.use(route.get('/logout', async (ctx) => {
+  await ctx.logout();
+  await ctx.redirect('/');
+}))
+// POST /login
+app.use(route.post('/login',
+  passport.authenticate('local', {
+    successRedirect: '/success',
+    failureRedirect: '/failure'
   })
- .post('/login', passport.authenticate('local', {
-    successRedirect: '/secretBankAccount',
-    failureRedirect: '/damn'
-   }));
-
+))
+app.use(route.get('/failrure', (ctx) => {
+  ctx.body = ctx.render({ // Use your render method
+        error: 'Invalid credentials' ,
+  });
+}));
 app.on('error', function(err, ctx){
   console.log(err)
   log.error('server error', err, ctx);
 });
 
-app.listen(3000);
+
+
+// Or you can simply use a connection uri
+// without password and options
+var sequelize = new Sequelize('postgres://yan@localhost:5432/crystal');
+var User = sequelize.define('user', {
+  username: {
+    type: Sequelize.STRING
+  },
+  password_hash: Sequelize.STRING,
+  password: {
+    type: Sequelize.VIRTUAL,
+    set: function (val) {
+       this.salt = "huyzalupasir"; //I am extremely sorry for this but Win is piece of shit cannot handle with installing bcrypt
+       this.setDataValue('password', val); // Remember to set the data value, otherwise it won't be validated
+       this.setDataValue('password_hash', this.salt + val);
+     },
+    //  set: function(password, done) {
+    //   return bcrypt.genSalt(10, function(err, salt) {
+    //     return bcrypt.hash(password, salt, function(error, encrypted) {
+    //       this.password = encrypted;
+    //       this.salt = salt;
+    //       return done();
+    //     });
+    //   }
+    // },
+     validate: {
+        isLongEnough: function (val) {
+          if (val.length < 7) {
+            throw new Error("Please choose a longer password")
+         }
+      }
+    }
+  }
+});
+
+// force: true will drop the table if it already exists
+User.sync({force: true}).then(function () {
+  // Table created
+  return User.create({
+    username: 'John',
+    password: '1234567'
+  });
+});
+// start server
+const port = process.env.PORT || 3000
+app.listen(port, () => console.log('Server listening on', port))
 

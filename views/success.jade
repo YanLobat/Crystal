@@ -1,0 +1,11 @@
+html
+	head
+		meta(charset="utf-8")
+		title #{title}
+	body
+		a(href="/") Login form
+		if (success)
+			h1 Success Login! 
+			a(href="/logout") Log out of here
+		else
+			h1 You shall not pass!
